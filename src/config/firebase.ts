@@ -3,6 +3,7 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
+// Firebase configuration
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -13,9 +14,12 @@ const firebaseConfig = {
 };
 
 // Validate Firebase configuration
-if (!firebaseConfig.apiKey) {
-  throw new Error('Firebase API key is missing');
-}
+if (!firebaseConfig.apiKey) throw new Error('Firebase API key is missing');
+if (!firebaseConfig.authDomain) throw new Error('Firebase Auth Domain is missing');
+if (!firebaseConfig.projectId) throw new Error('Firebase Project ID is missing');
+if (!firebaseConfig.storageBucket) throw new Error('Firebase Storage Bucket is missing');
+if (!firebaseConfig.messagingSenderId) throw new Error('Firebase Messaging Sender ID is missing');
+if (!firebaseConfig.appId) throw new Error('Firebase App ID is missing');
 
 // Initialize Firebase with error handling
 let app: FirebaseApp;

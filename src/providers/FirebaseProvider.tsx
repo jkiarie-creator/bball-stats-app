@@ -24,6 +24,7 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setLoading(true); // Ensure loading state is set at the start
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
@@ -36,20 +37,8 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  if (loading) {
-    return null; // Return null while loading
-  }
-
-  if (error) {
-    return (
-      <FirebaseContext.Provider value={{ user: null, loading: false, error }}>
-        {children}
-      </FirebaseContext.Provider>
-    );
-  }
-
   return (
-    <FirebaseContext.Provider value={{ user, loading: false, error: null }}>
+    <FirebaseContext.Provider value={{ user, loading, error }}>
       {children}
     </FirebaseContext.Provider>
   );

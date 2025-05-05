@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import { TeamSetup } from './TeamSetup';
-import type { Team } from '@types/index';
+import type { Team } from '@/types';
 
 describe('TeamSetup Component', () => {
   let mockTeam: Team;

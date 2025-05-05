@@ -3,7 +3,7 @@ import { View, ScrollView, StyleSheet } from 'react-native';
 import { Surface, Title, Text, Button, ActivityIndicator } from 'react-native-paper';
 import { collection, query, orderBy, getDocs, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import type { GameData } from '@/types/game';
+import type { GameData } from '../../types/game';
 
 interface Team {
   name: string;

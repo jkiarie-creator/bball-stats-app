@@ -1,15 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Provider as ReduxProvider } from 'react-redux';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
-import { store } from '../src/store';
-import { ThemeProvider } from '../src/theme/ThemeProvider';
-import AppNavigator from '../src/navigation/AppNavigator';
+import { store } from '@/store';
+import { ThemeProvider } from '@/theme/ThemeProvider';
+import AppNavigator from '@/navigation/AppNavigator';
 import { ActivityIndicator, View, Text } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { useSync } from '../src/hooks/useSync';
+import { useSync } from '@/hooks/useSync';
 import { Snackbar } from 'react-native-paper';
-import { AuthProvider } from '../src/providers/AuthProvider';
+import { AuthProvider } from '@/providers/AuthProvider';
+import { FirebaseProvider } from '@/providers/FirebaseProvider';
 
 // Configure notification handler
 Notifications.setNotificationHandler({
@@ -28,6 +29,7 @@ interface NotificationData {
 }
 
 function AppContent() {
+  const navigationRef = useNavigationContainerRef();
   const { isOnline, isSyncing, lastSyncTime } = useSync();
   const [showOfflineMessage, setShowOfflineMessage] = useState(false);
 
@@ -39,7 +41,7 @@ function AppContent() {
 
   return (
     <>
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         <AppNavigator />
       </NavigationContainer>
       
@@ -74,6 +76,8 @@ function AppContent() {
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const navigationRef = useNavigationContainerRef();
   const notificationListener = useRef<Notifications.Subscription>();
   const responseListener = useRef<Notifications.Subscription>();
 
@@ -97,17 +101,16 @@ export default function App() {
         // Listen for notification responses
         responseListener.current = Notifications.addNotificationResponseReceivedListener(
           response => {
-            const data = response.notification.request.content.data;
+            const data = response.notification.request.content.data as NotificationData;
             if (data?.gameId) {
-              // TODO: Navigate to game details screen
-              console.log('Navigate to game:', data.gameId);
+              navigationRef.current?.navigate('GameDetails', { gameId: data.gameId });
             }
           }
         );
 
         setIsLoading(false);
       } catch (error) {
-        console.error('Error setting up notifications:', error);
+        setError(error as Error);
         setIsLoading(false);
       }
     };
@@ -124,6 +127,14 @@ export default function App() {
     };
   }, []);
 
+  if (error) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Error: {error.message}</Text>
+      </View>
+    );
+  }
+
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -136,11 +147,13 @@ export default function App() {
     <SafeAreaProvider>
       <ReduxProvider store={store}>
         <ThemeProvider>
-          <AuthProvider>
-            <AppContent />
-          </AuthProvider>
+          <FirebaseProvider> {/* Wrap with FirebaseProvider */}
+            <AuthProvider>
+              <AppContent />
+            </AuthProvider>
+          </FirebaseProvider>
         </ThemeProvider>
       </ReduxProvider>
     </SafeAreaProvider>
   );
-} 
+}
