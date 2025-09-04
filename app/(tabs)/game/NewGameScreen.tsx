@@ -4,15 +4,10 @@ import { Text, TextInput, IconButton } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING } from '../../../src/theme';
 import { Header, Button } from '../../../src/components/common';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { GameStackParamList } from '../../../src/navigation/AppNavigator';
+import { router } from 'expo-router';
 import type { Team, Player, GameSettings } from '../../../src/types';
 
-type Props = {
-  navigation: NativeStackNavigationProp<GameStackParamList, 'NewGame'>;
-};
-
-const NewGameScreen: React.FC<Props> = ({ navigation }) => {
+const NewGameScreen = () => {
   const [homeTeam, setHomeTeam] = useState<Team>({
     name: '',
     color: COLORS.primary,
@@ -89,10 +84,13 @@ const NewGameScreen: React.FC<Props> = ({ navigation }) => {
     }
 
     setErrorMessage(null);
-    navigation.navigate('LiveGame', {
-      homeTeam,
-      awayTeam,
-      gameSettings,
+    router.push({
+      pathname: '/(tabs)/game/live',
+      params: {
+        homeTeam: JSON.stringify(homeTeam),
+        awayTeam: JSON.stringify(awayTeam),
+        gameSettings: JSON.stringify(gameSettings)
+      }
     });
   };
 

@@ -27,8 +27,8 @@ export const login = createAsyncThunk(
   }
 );
 
-export const register = createAsyncThunk(
-  'auth/register',
+export const registerUser = createAsyncThunk(
+  'auth/  ',
   async ({
     email,
     password,
@@ -74,15 +74,15 @@ const authSlice = createSlice({
         state.error = action.error.message || 'Failed to login';
       })
       // Register
-      .addCase(register.pending, (state) => {
+      .addCase(registerUser.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(register.fulfilled, (state, action) => {
+      .addCase(registerUser.fulfilled, (state, action) => {
         state.isLoading = false;
         state.user = action.payload;
       })
-      .addCase(register.rejected, (state, action) => {
+      .addCase(registerUser.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.error.message || 'Failed to register';
       })

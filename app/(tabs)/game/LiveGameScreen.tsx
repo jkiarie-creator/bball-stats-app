@@ -5,8 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { COLORS, SPACING, SHADOWS } from '../../../src/theme';
 import { Header, Button } from '../../../src/components/common';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RouteProp } from '@react-navigation/native';
+import { router, useLocalSearchParams } from 'expo-router';
 import type { RootState, AppDispatch } from '../../../src/store';
 import {
   updateGameClock,
@@ -25,37 +24,68 @@ import {
   sendStatMilestone,
 } from '../../../src/services/notifications';
 import type { Team, Player, GameSettings, PlayerStats } from '../../../src/types';
+import type { Game } from '../../../src/types/game';
+import 'react-native-get-random-values';
+import { v4 as uuidv4 } from 'uuid';
+import { startNewGame } from '../../../src/store/slices/gameSlice';
 
-// Extend the Game interface to include the properties needed in this component
-interface ExtendedGame {
-  id: string;
-  homeTeam: Team;
-  awayTeam: Team;
-  date: string;
-  status: 'upcoming' | 'live' | 'completed';
-  quarter: number;
-  timeRemaining: number;
-  gameSettings: GameSettings;
-  isRunning?: boolean;
-  isPaused?: boolean;
-  shotClock: number;
-}
+const LiveGameScreen = () => {
+  const params = useLocalSearchParams<{
+    homeTeam: string;
+    awayTeam: string;
+    gameSettings: string;
+  }>();
 
-interface RouteParams {
-  homeTeam: Team;
-  awayTeam: Team;
-  gameSettings: GameSettings;
-}
+  useEffect(() => {
+    if (params.homeTeam && params.awayTeam && params.gameSettings) {
+      const parsedHomeTeam = JSON.parse(params.homeTeam) as Team;
+      const parsedAwayTeam = JSON.parse(params.awayTeam) as Team;
+      const parsedSettings = JSON.parse(params.gameSettings) as GameSettings;
+      
+      // Initialize with required properties
+      const homeTeam: Game['homeTeam'] = {
+        ...parsedHomeTeam,
+        score: 0,
+        fouls: 0,
+        timeouts: 5,
+      };
 
-interface LiveGameScreenProps {
-  navigation: NativeStackNavigationProp<any>;
-  route: RouteProp<{ LiveGame: RouteParams }, 'LiveGame'>;
-}
+      const awayTeam: Game['awayTeam'] = {
+        ...parsedAwayTeam,
+        score: 0,
+        fouls: 0,
+        timeouts: 5,
+      };
 
-const LiveGameScreen: React.FC<LiveGameScreenProps> = ({ navigation, route }) => {
+      const settings: GameSettings = {
+        quarterLength: parsedSettings.quarterLength || 12,
+        shotClockLength: 24,
+        enableShotClock: true,
+        bonusThreshold: 5,
+        doubleBonus: 7,
+      };
+      
+      const newGame: Game = {
+        id: uuidv4(),
+        homeTeam,
+        awayTeam,
+        settings,
+        startTime: new Date().toISOString(),
+        currentQuarter: 1,
+        timeRemaining: settings.quarterLength * 60,
+        shotClockTime: settings.enableShotClock ? settings.shotClockLength : null,
+        isRunning: false,
+        isPaused: false,
+        userId: user?.uid || '',
+        status: 'live'
+      };
+
+      dispatch(startNewGame(newGame));
+    }
+  }, [params]);
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector((state: RootState) => state.auth.user);
-  const currentGame = useSelector((state: RootState) => state.game.currentGame) as ExtendedGame | null;
+  const currentGame = useSelector((state: RootState) => state.game.currentGame);
   const settings = useSelector((state: RootState) => state.settings);
   const notifications = settings?.sound?.enabled; // Updated to use a property from settings that exists
 
@@ -77,24 +107,26 @@ const LiveGameScreen: React.FC<LiveGameScreenProps> = ({ navigation, route }) =>
   }, [currentGame?.isRunning, gameStarted, notifications]);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
 
     if (currentGame?.isRunning && !currentGame?.isPaused) {
       interval = setInterval(() => {
         dispatch(updateGameClock(currentGame.timeRemaining - 1));
-        dispatch(updateShotClock(currentGame.shotClock - 1));
+        if (currentGame.shotClockTime !== null) {
+          dispatch(updateShotClock(currentGame.shotClockTime - 1));
+        }
 
         if (currentGame.timeRemaining <= 0) {
           dispatch(pauseGame());
           if (notifications && currentGame.id) {
-            if (currentGame.quarter < 4) {
-              sendQuarterEnd(currentGame.id, currentGame.quarter);
+            if (currentGame.currentQuarter < 4) {
+              sendQuarterEnd(currentGame.id, currentGame.currentQuarter);
             }
           }
         }
 
-        if (currentGame.shotClock <= 0) {
-          dispatch(updateShotClock(currentGame.gameSettings.shotClock));
+        if (currentGame.shotClockTime !== null && currentGame.shotClockTime <= 0) {
+          dispatch(updateShotClock(currentGame.settings.shotClockLength));
         }
       }, 1000);
     }
@@ -191,15 +223,15 @@ const LiveGameScreen: React.FC<LiveGameScreenProps> = ({ navigation, route }) =>
       );
     }
 
-    dispatch(
-      updateGameStats({
-        gameId: currentGame.id,
-        updates: {
+    if (currentGame) {
+      dispatch(
+        updateGameStats({
+          ...currentGame,
           [selectedPlayer.team === 'home' ? 'homeTeam' : 'awayTeam']:
             currentGame[selectedPlayer.team === 'home' ? 'homeTeam' : 'awayTeam'],
-        },
-      })
-    );
+        })
+      );
+    }
   };
 
   const handleEndGame = async () => {
@@ -207,12 +239,8 @@ const LiveGameScreen: React.FC<LiveGameScreenProps> = ({ navigation, route }) =>
 
     await dispatch(
       updateGameStats({
-        gameId: currentGame.id,
-        updates: {
-          status: 'completed',
-          homeTeam: currentGame.homeTeam,
-          awayTeam: currentGame.awayTeam,
-        },
+        ...currentGame,
+        status: 'completed',
       })
     );
 
@@ -226,7 +254,7 @@ const LiveGameScreen: React.FC<LiveGameScreenProps> = ({ navigation, route }) =>
       );
     }
 
-    navigation.goBack();
+    router.back();
   };
 
   const renderScoreboard = () => (
@@ -239,11 +267,11 @@ const LiveGameScreen: React.FC<LiveGameScreenProps> = ({ navigation, route }) =>
       </View>
 
       <View style={styles.gameInfo}>
-        <Text style={styles.quarterText}>Q{currentGame?.quarter}</Text>
+        <Text style={styles.quarterText}>Q{currentGame?.currentQuarter}</Text>
         <Text style={styles.timeText}>
           {formatTime(currentGame?.timeRemaining || 0)}
         </Text>
-        <Text style={styles.shotClockText}>{currentGame?.shotClock}</Text>
+        <Text style={styles.shotClockText}>{currentGame?.shotClockTime}</Text>
       </View>
 
       <View style={styles.teamScore}>
@@ -269,7 +297,7 @@ const LiveGameScreen: React.FC<LiveGameScreenProps> = ({ navigation, route }) =>
         size={32}
         onPress={() =>
           dispatch(
-            updateShotClock(currentGame?.gameSettings.shotClock || 24)
+            updateShotClock(currentGame?.settings.shotClockLength || 24)
           )
         }
       />
@@ -322,7 +350,7 @@ const LiveGameScreen: React.FC<LiveGameScreenProps> = ({ navigation, route }) =>
         title="Live Game"
         leftIcon="close"
         rightIcon="check"
-        onLeftPress={() => navigation.goBack()}
+        onLeftPress={() => router.back()}
         onRightPress={handleEndGame}
       />
 

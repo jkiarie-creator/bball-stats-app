@@ -15,7 +15,7 @@ export default function TabLayout() {
       <AuthGuard>
         <Tabs
           screenOptions={{
-            tabBarActiveTintColor: colorScheme === 'dark' ? COLORS.primary : COLORS.primaryDark,
+            tabBarActiveTintColor: colorScheme === 'dark' ? COLORS.primaryDark : COLORS.primary,
             tabBarStyle: {
               backgroundColor: colorScheme === 'dark' ? COLORS.backgroundDark : COLORS.background,
               ...Platform.select({

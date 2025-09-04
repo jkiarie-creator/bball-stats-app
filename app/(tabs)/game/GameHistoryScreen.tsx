@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Surface, Title, Text, Button, ActivityIndicator } from 'react-native-paper';
 import { collection, query, orderBy, getDocs, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
-import { db } from '../../config/firebase';
-import type { GameData } from '../../types/game';
+import { db } from 'src/config/firebase';
+import type { GameData } from 'src/types/game';
 
 interface Team {
   name: string;

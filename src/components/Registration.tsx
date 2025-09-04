@@ -2,19 +2,21 @@ import React, { useState } from 'react';
 import { View, TextInput, Button, Text, ActivityIndicator } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { registerUser } from '@store/slices/authSlice';
+import type { AppDispatch } from '../store';
 
 const Registration = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const handleRegister = async () => {
     setLoading(true);
     setError('');
     try {
-      await dispatch(registerUser({ email, password })).unwrap();
+      await dispatch(registerUser({ email, password, displayName })).unwrap();
     } catch (err) {
       setError('Registration failed. Please try again.');
     } finally {
@@ -24,6 +26,12 @@ const Registration = () => {
 
   return (
     <View style={{ padding: 20 }}>
+      <TextInput
+        placeholder="Display Name"
+        value={displayName}
+        onChangeText={setDisplayName}
+        style={{ marginBottom: 10 }}
+      />
       <TextInput
         placeholder="Email"
         value={email}

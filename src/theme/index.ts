@@ -113,9 +113,63 @@ export const darkTheme: MD3Theme = {
 };
 
 export const COLORS = {
-  ...lightColors,
+  // Light mode colors
+  primary: lightColors.primary,
+  secondary: lightColors.secondary,
+  accent: lightColors.accent,
+  background: lightColors.background,
+  surface: lightColors.surface,
+  text: lightColors.text,
+  subtext: lightColors.subtext,
+  
+  // Status colors - light
+  success: lightColors.success,
+  error: lightColors.error,
+  warning: lightColors.warning,
+  info: lightColors.info,
+  
+  // Dark mode colors
+  primaryDark: darkColors.primary,
+  secondaryDark: darkColors.secondary,
+  accentDark: darkColors.accent,
+  backgroundDark: darkColors.background,
+  surfaceDark: darkColors.surface,
+  textDark: darkColors.text,
+  subtextDark: darkColors.subtext,
+  
+  // Status colors - dark
+  successDark: darkColors.success,
+  errorDark: darkColors.error,
+  warningDark: darkColors.warning,
+  infoDark: darkColors.info,
+  
+  // Gradients
   gradientStart: '#4a6da7',
   gradientEnd: '#2c3e50',
+  
+  // Game specific colors
+  homeTeam: lightColors.homeTeam,
+  awayTeam: lightColors.awayTeam,
+  homeTeamDark: darkColors.homeTeam,
+  awayTeamDark: darkColors.awayTeam,
+  
+  // Stats colors
+  points: lightColors.points,
+  assists: lightColors.assists,
+  rebounds: lightColors.rebounds,
+  steals: lightColors.steals,
+  blocks: lightColors.blocks,
+  turnovers: lightColors.turnovers,
+  fouls: lightColors.fouls,
+  
+  // Stats colors (dark)
+  pointsDark: darkColors.points,
+  assistsDark: darkColors.assists,
+  reboundsDark: darkColors.rebounds,
+  stealsDark: darkColors.steals,
+  blocksDark: darkColors.blocks,
+  turnoversDark: darkColors.turnovers,
+  foulsDark: darkColors.fouls,
 };
 
 export { SPACING, SHADOWS };
@@ -141,7 +195,7 @@ export const BORDER_RADIUS = {
   round: 999,
 };
 
-export const theme = {
+export const theme: MD3Theme = {
   ...MD3LightTheme,
   colors: {
     ...MD3LightTheme.colors,
@@ -149,31 +203,30 @@ export const theme = {
     secondary: COLORS.secondary,
     background: COLORS.background,
     surface: COLORS.surface,
-    text: COLORS.text,
     error: COLORS.error,
-  },
-  fonts: {
-    fontFamily: baseFont,
   },
 };
 
-export const getStatColor = (statType: string) => {
-  switch (statType.toLowerCase()) {
+export const getStatColor = (statType: string, isDark: boolean = false) => {
+  const type = statType.toLowerCase();
+  const darkSuffix = isDark ? 'Dark' : '';
+  
+  switch (type) {
     case 'points':
-      return COLORS.points;
+      return COLORS[`points${darkSuffix}`];
     case 'assists':
-      return COLORS.assists;
+      return COLORS[`assists${darkSuffix}`];
     case 'rebounds':
-      return COLORS.rebounds;
+      return COLORS[`rebounds${darkSuffix}`];
     case 'steals':
-      return COLORS.steals;
+      return COLORS[`steals${darkSuffix}`];
     case 'blocks':
-      return COLORS.blocks;
+      return COLORS[`blocks${darkSuffix}`];
     case 'turnovers':
-      return COLORS.turnovers;
+      return COLORS[`turnovers${darkSuffix}`];
     case 'fouls':
-      return COLORS.fouls;
+      return COLORS[`fouls${darkSuffix}`];
     default:
-      return COLORS.text;
+      return COLORS[`text${darkSuffix}`];
   }
 }; 

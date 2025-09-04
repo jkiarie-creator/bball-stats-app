@@ -1,24 +1,47 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { doc, collection, addDoc, updateDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/config/firebase';
-import type { GameState, GameData } from '@/types';
+import type { Game } from '@/types/game';
+import type { GameState, GameData } from '@/types/gameState';
+import type { Player, PlayerStats } from '@/types';
 
 interface AsyncError {
   message: string;
   code?: string;
 }
 
+// Define rejectValue type for the thunks
+type ThunkError = AsyncError | undefined;
+
 export const startNewGame = createAsyncThunk(
   'game/startNewGame',
   async (gameData: Omit<GameData, 'id'>, { rejectWithValue }) => {
     try {
-      const docRef = await addDoc(collection(db, 'games'), gameData);
-      return { ...gameData, id: docRef.id } as GameData;
+      // Initialize Team properties
+      const initializedGameData = {
+        ...gameData,
+        homeTeam: {
+          ...gameData.homeTeam,
+          score: gameData.homeTeam.score || 0,
+          fouls: gameData.homeTeam.fouls || 0,
+          timeouts: gameData.homeTeam.timeouts || 5, // Default to 5 timeouts
+        },
+        awayTeam: {
+          ...gameData.awayTeam,
+          score: gameData.awayTeam.score || 0,
+          fouls: gameData.awayTeam.fouls || 0,
+          timeouts: gameData.awayTeam.timeouts || 5, // Default to 5 timeouts
+        }
+      };
+      
+      const docRef = await addDoc(collection(db, 'games'), initializedGameData);
+      return { ...initializedGameData, id: docRef.id } as GameData;
     } catch (error: any) {
-      const errorMessage = error.message || 'Failed to start new game';
+      const err = error as { message?: string; code?: string };
+      const errorMessage = err.message || 'Failed to start new game';
       return rejectWithValue({
         message: errorMessage,
-        code: error.code,
+        code: err.code,
       } as AsyncError);
     }
   }
@@ -34,10 +57,11 @@ export const updateGameStats = createAsyncThunk(
       await updateDoc(doc(db, 'games', id), data);
       return gameData;
     } catch (error: any) {
-      const errorMessage = error.message || 'Failed to update game stats';
+      const err = error as { message?: string; code?: string };
+      const errorMessage = err.message || 'Failed to update game stats';
       return rejectWithValue({
         message: errorMessage,
-        code: error.code,
+        code: err.code,
       } as AsyncError);
     }
   }
@@ -57,10 +81,11 @@ export const fetchGameHistory = createAsyncThunk(
       
       return games;
     } catch (error: any) {
-      const errorMessage = error.message || 'Failed to fetch game history';
+      const err = error as { message?: string; code?: string };
+      const errorMessage = err.message || 'Failed to fetch game history';
       return rejectWithValue({
         message: errorMessage,
-        code: error.code,
+        code: err.code,
       } as AsyncError);
     }
   }
@@ -117,15 +142,15 @@ const gameSlice = createSlice({
     updatePlayerStats: (state, action: PayloadAction<{
       team: 'home' | 'away';
       playerId: string;
-      stats: Partial<Player['stats']>;
+      stats: Partial<PlayerStats>;
     }>) => {
       if (state.currentGame) {
         const { team, playerId, stats } = action.payload;
         const player = team === 'home' 
-          ? state.currentGame.homeTeam.players.find(p => p.name === playerId)
-          : state.currentGame.awayTeam.players.find(p => p.name === playerId);
+          ? state.currentGame.homeTeam.players.find(p => p.id === playerId)
+          : state.currentGame.awayTeam.players.find(p => p.id === playerId);
         
-        if (player) {
+        if (player && player.stats) {
           Object.assign(player.stats, stats);
         }
       }
@@ -187,11 +212,11 @@ const gameSlice = createSlice({
       })
       .addCase(startNewGame.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentGame = action.payload;
+        state.currentGame = action.payload as unknown as Game;
       })
       .addCase(startNewGame.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || 'Failed to start new game';
+        state.error = (action.payload as AsyncError)?.message || 'Failed to start new game';
       })
       .addCase(updateGameStats.pending, (state) => {
         state.loading = true;
@@ -199,11 +224,11 @@ const gameSlice = createSlice({
       })
       .addCase(updateGameStats.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentGame = action.payload;
+        state.currentGame = action.payload as Game;
       })
       .addCase(updateGameStats.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || 'Failed to update game stats';
+        state.error = (action.payload as AsyncError)?.message || 'Failed to update game stats';
       })
       .addCase(fetchGameHistory.pending, (state) => {
         state.loading = true;
@@ -211,11 +236,11 @@ const gameSlice = createSlice({
       })
       .addCase(fetchGameHistory.fulfilled, (state, action) => {
         state.loading = false;
-        state.gameHistory = action.payload;
+        state.gameHistory = action.payload as Game[];
       })
       .addCase(fetchGameHistory.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || 'Failed to fetch game history';
+        state.error = (action.payload as AsyncError)?.message || 'Failed to fetch game history';
       });
   },
 });

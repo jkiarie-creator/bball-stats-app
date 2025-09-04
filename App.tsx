@@ -1,16 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Provider as ReduxProvider } from 'react-redux';
-import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
+import { router, Href } from 'expo-router';
 import * as Notifications from 'expo-notifications';
-import { store } from '@/store';
-import { ThemeProvider } from '@/theme/ThemeProvider';
-import AppNavigator from '@/navigation/AppNavigator';
+import { store } from './src/store';
+import { ThemeProvider } from './src/theme/ThemeProvider';
 import { ActivityIndicator, View, Text } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { useSync } from '@/hooks/useSync';
+import { useSync } from './src/hooks/useSync';
 import { Snackbar } from 'react-native-paper';
-import { AuthProvider } from '@/providers/AuthProvider';
-import { FirebaseProvider } from '@/providers/FirebaseProvider';
+import { AuthProvider } from './src/providers/AuthProvider';
+import { FirebaseProvider } from './src/providers/FirebaseProvider';
 
 // Configure notification handler
 Notifications.setNotificationHandler({
@@ -18,6 +17,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -29,8 +30,7 @@ interface NotificationData {
 }
 
 function AppContent() {
-  const navigationRef = useNavigationContainerRef();
-  const { isOnline, isSyncing, lastSyncTime } = useSync();
+  const { isOnline, isSyncing } = useSync();
   const [showOfflineMessage, setShowOfflineMessage] = useState(false);
 
   useEffect(() => {
@@ -41,10 +41,6 @@ function AppContent() {
 
   return (
     <>
-      <NavigationContainer ref={navigationRef}>
-        <AppNavigator />
-      </NavigationContainer>
-      
       <Snackbar
         visible={showOfflineMessage}
         onDismiss={() => setShowOfflineMessage(false)}
@@ -65,6 +61,7 @@ function AppContent() {
           backgroundColor: 'rgba(0,0,0,0.7)',
           padding: 8,
           borderBottomLeftRadius: 8,
+          zIndex: 1000,
         }}>
           <ActivityIndicator size="small" color="#fff" />
           <Text style={{ color: '#fff', fontSize: 12, marginTop: 4 }}>Syncing...</Text>
@@ -77,9 +74,8 @@ function AppContent() {
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const navigationRef = useNavigationContainerRef();
-  const notificationListener = useRef<Notifications.Subscription>();
-  const responseListener = useRef<Notifications.Subscription>();
+  const notificationListener = useRef<Notifications.Subscription | undefined>(undefined);
+  const responseListener = useRef<Notifications.Subscription | undefined>(undefined);
 
   useEffect(() => {
     const setupNotifications = async () => {
@@ -93,17 +89,21 @@ export default function App() {
 
         // Listen for incoming notifications
         notificationListener.current = Notifications.addNotificationReceivedListener(
-          notification => {
+          (notification: Notifications.Notification) => {
             console.log('Received notification:', notification);
           }
         );
 
         // Listen for notification responses
         responseListener.current = Notifications.addNotificationResponseReceivedListener(
-          response => {
+          (response: Notifications.NotificationResponse) => {
             const data = response.notification.request.content.data as NotificationData;
             if (data?.gameId) {
-              navigationRef.current?.navigate('GameDetails', { gameId: data.gameId });
+              // Navigate directly to the game details using the (game) group
+              router.replace({
+                pathname: "/(game)/[id]",
+                params: { id: data.gameId }
+              } as any);
             }
           }
         );

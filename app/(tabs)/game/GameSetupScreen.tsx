@@ -4,33 +4,38 @@ import { Text, TextInput, Chip, IconButton, Portal, Dialog } from 'react-native-
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING, SHADOWS } from '../../../src/theme';
 import { Header, Button } from '../../../src/components/common';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { router } from 'expo-router';
 import type { Team, Player, GameSettings } from '../../../src/types';
 
-interface GameSetupScreenProps {
-  navigation: NativeStackNavigationProp<any>;
-}
+// Extend GameSettings to include quarters
+type GameSettingsWithQuarters = GameSettings & {
+  quarters: number;
+};
 
-// Explicitly declare the gameSettings type to ensure quarters is always defined
-type GameSettingsWithQuarters = GameSettings & { quarters: number };
-
-const GameSetupScreen: React.FC<GameSetupScreenProps> = ({ navigation }) => {
+const GameSetupScreen = () => {
   const [homeTeam, setHomeTeam] = useState<Team>({
     name: '',
     color: COLORS.homeTeam,
     players: [],
+    score: 0,
+    fouls: 0,
+    timeouts: 5
   });
 
   const [awayTeam, setAwayTeam] = useState<Team>({
     name: '',
     color: COLORS.awayTeam,
     players: [],
+    score: 0,
+    fouls: 0,
+    timeouts: 5
   });
 
   const [gameSettings, setGameSettings] = useState<GameSettingsWithQuarters>({
     quarters: 4,
-    minutesPerQuarter: 12,
-    shotClock: 24,
+    quarterLength: 10,
+    shotClockLength: 24,
+    enableShotClock: true,
   });
 
   const [showAddPlayer, setShowAddPlayer] = useState(false);
@@ -88,11 +93,18 @@ const GameSetupScreen: React.FC<GameSetupScreenProps> = ({ navigation }) => {
     }
 
     setErrorMessage(null);
-    navigation.navigate('LiveGame', {
-      homeTeam,
-      awayTeam,
-      gameSettings,
-    });
+    
+    // Navigate to the new game screen
+    const href = {
+      pathname: "/(game)/[id]" as const,
+      params: {
+        id: 'new',
+        homeTeam: JSON.stringify(homeTeam),
+        awayTeam: JSON.stringify(awayTeam),
+        gameSettings: JSON.stringify(gameSettings)
+      }
+    };
+    router.push(href as any);
   };
 
   const renderTeamSection = (team: Team, teamType: 'home' | 'away') => (
@@ -193,18 +205,18 @@ const GameSetupScreen: React.FC<GameSetupScreenProps> = ({ navigation }) => {
                   onPress={() =>
                     setGameSettings({
                       ...gameSettings,
-                      minutesPerQuarter: Math.max(1, gameSettings.minutesPerQuarter - 1),
+                      quarterLength: Math.max(1, gameSettings.quarterLength - 1),
                     })
                   }
                 />
-                <Text style={styles.settingValue}>{gameSettings.minutesPerQuarter}</Text>
+                <Text style={styles.settingValue}>{gameSettings.quarterLength}</Text>
                 <IconButton
                   icon="plus"
                   size={20}
                   onPress={() =>
                     setGameSettings({
                       ...gameSettings,
-                      minutesPerQuarter: Math.min(20, gameSettings.minutesPerQuarter + 1),
+                      quarterLength: Math.min(20, gameSettings.quarterLength + 1),
                     })
                   }
                 />
@@ -220,18 +232,18 @@ const GameSetupScreen: React.FC<GameSetupScreenProps> = ({ navigation }) => {
                   onPress={() =>
                     setGameSettings({
                       ...gameSettings,
-                      shotClock: Math.max(12, gameSettings.shotClock - 1),
+                      shotClockLength: Math.max(12, gameSettings.shotClockLength - 1),
                     })
                   }
                 />
-                <Text style={styles.settingValue}>{gameSettings.shotClock}</Text>
+                <Text style={styles.settingValue}>{gameSettings.shotClockLength}</Text>
                 <IconButton
                   icon="plus"
                   size={20}
                   onPress={() =>
                     setGameSettings({
                       ...gameSettings,
-                      shotClock: Math.min(35, gameSettings.shotClock + 1),
+                      shotClockLength: Math.min(35, gameSettings.shotClockLength + 1),
                     })
                   }
                 />
@@ -244,7 +256,7 @@ const GameSetupScreen: React.FC<GameSetupScreenProps> = ({ navigation }) => {
           title="Start Game"
           onPress={handleStartGame}
           style={styles.startButton}
-          gradient
+          variant="primary"
         />
       </ScrollView>
 
@@ -272,7 +284,7 @@ const GameSetupScreen: React.FC<GameSetupScreenProps> = ({ navigation }) => {
             <Button
               title="Cancel"
               onPress={() => setShowAddPlayer(false)}
-              variant="outline"
+              variant="secondary"
             />
             <Button
               title="Add"

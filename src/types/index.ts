@@ -24,22 +24,45 @@ export interface Team {
   name: string;
   color: string;
   players: Player[];
-  score?: number;
-  fouls?: number;
-  timeouts?: number;
+  score: number;
+  fouls: number;
+  timeouts: number;
 }
 
 export interface GameSettings {
-  minutesPerQuarter: number;
-  shotClock: number;
-  quarters?: number;
-  quarterLength?: number;
-  enableShotClock?: boolean;
-  shotClockDuration?: number;
-  bonusEnabled?: boolean;
+  quarterLength: number;
+  shotClockLength: number;
+  enableShotClock: boolean;
+  bonusThreshold?: number;
+  doubleBonus?: number;
 }
 
 export type GameStatus = 'upcoming' | 'live' | 'completed';
+
+export interface Game {
+  id: string;
+  homeTeam: Team;
+  awayTeam: Team;
+  settings: GameSettings;
+  startTime: string;
+  endTime?: string;
+  currentQuarter: number;
+  timeRemaining: number;
+  shotClockTime: number | null;
+  isRunning: boolean;
+  isPaused: boolean;
+  userId: string;
+  status: GameStatus;
+}
+
+export type NewGame = Omit<Game, 'id' | 'userId' | 'status'>;
+
+export interface GameState {
+  currentGame: Game | null;
+  gameHistory: Game[];
+  loading: boolean;
+  error: string | null;
+}
 
 export interface GameEvent {
   id: string;
@@ -51,18 +74,6 @@ export interface GameEvent {
   timeRemaining: number;
   value: number;
   description: string;
-}
-
-export interface Game {
-  id: string;
-  homeTeam: Team;
-  awayTeam: Team;
-  date: string;
-  status: GameStatus;
-  currentQuarter: number;
-  timeRemaining: number;
-  gameSettings: GameSettings;
-  events: GameEvent[];
 }
 
 export interface AuthState {

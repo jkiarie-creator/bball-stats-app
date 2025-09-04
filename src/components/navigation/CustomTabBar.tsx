@@ -3,16 +3,16 @@ import { View, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { Text } from 'react-native-paper';
 import * as Animatable from 'react-native-animatable';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, FONTS, SPACING, SHADOWS } from '../../theme';
-import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { COLORS, SPACING, SHADOWS } from '../../theme';
+import { Slot, Tabs } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
-const CustomTabBar: React.FC<BottomTabBarProps> = ({
-  state,
+const CustomTabBar = ({ 
+  state, 
   descriptors,
-  navigation,
-}) => {
+  navigation 
+}: any) => {
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -20,7 +20,7 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({
         style={styles.gradient}
       >
         <View style={styles.content}>
-          {state.routes.map((route, index) => {
+          {state.routes.map((route: { key: string; name: string }, index: number) => {
             const { options } = descriptors[route.key];
             const label =
               options.tabBarLabel !== undefined
@@ -38,7 +38,7 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({
                 canPreventDefault: true,
               });
 
-              if (!isFocused && !event.defaultPrevented) {
+              if (!isFocused) {
                 navigation.navigate(route.name);
               }
             };
@@ -132,9 +132,9 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   label: {
-    fontFamily: FONTS.medium,
     fontSize: 12,
     marginTop: 4,
+    fontWeight: '500',
   },
 });
 
